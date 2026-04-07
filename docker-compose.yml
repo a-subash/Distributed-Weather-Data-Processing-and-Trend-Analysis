@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  mongo:
+    image: mongo:6
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+  backend:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "pip install -r backend/requirements.txt && python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - MONGODB_URI=mongodb://mongo:27017
+    ports:
+      - "8010:8000"
+    depends_on:
+      - mongo
+  frontend:
+    image: node:20
+    working_dir: /app/frontend
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npm run dev -- --host"
+    environment:
+      - VITE_API_BASE=http://backend:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
